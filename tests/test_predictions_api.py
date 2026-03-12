@@ -53,3 +53,11 @@ def test_prediction_endpoint_returns_503_when_model_is_unavailable(not_ready_app
         )
     assert response.status_code == 503
     assert response.json()["error"] == "model_unavailable"
+
+
+def test_prediction_service_is_a_lifespan_singleton(ready_app):
+    with TestClient(ready_app) as client:
+        runtime = client.app.state.runtime
+        first_service = runtime.prediction_service
+        client.get("/healthz")
+        assert client.app.state.runtime.prediction_service is first_service

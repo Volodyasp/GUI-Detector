@@ -5,11 +5,11 @@ from io import BytesIO
 import pytest
 from PIL import Image
 
-from gui_detector_api.detectors.factory import DetectorFactory
 from gui_detector_api.detectors.fake import FakeDetector
+from gui_detector_api.detectors.model_registry import ModelRegistry
 from gui_detector_api.domain.schemas import BoundingBox, Detection, DetectorBackend
 from gui_detector_api.main import create_app
-from gui_detector_api.settings import AppSettings, ModelSettings, default_models
+from gui_detector_api.settings import AppSettings, default_models
 
 
 def make_png_bytes(color: str = "white") -> bytes:
@@ -70,10 +70,10 @@ def fake_detector_builder():
 
 @pytest.fixture
 def ready_app(test_settings, fake_detector_builder):
-    factory = DetectorFactory(registry={DetectorBackend.ULTRALYTICS: fake_detector_builder})
-    return create_app(settings=test_settings, detector_factory=factory)
+    registry = ModelRegistry(builders={DetectorBackend.ULTRALYTICS: fake_detector_builder})
+    return create_app(settings=test_settings, model_registry=registry)
 
 
 @pytest.fixture
 def not_ready_app(test_settings):
-    return create_app(settings=test_settings, detector_factory=DetectorFactory(), load_detector_on_startup=False)
+    return create_app(settings=test_settings, model_registry=ModelRegistry(), load_detector_on_startup=False)

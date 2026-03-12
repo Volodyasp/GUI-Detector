@@ -2,9 +2,8 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from gui_detector_api.detectors.base import ModelLoadError
-from gui_detector_api.detectors.factory import DetectorFactory
 from gui_detector_api.detectors.fake import FakeDetector
+from gui_detector_api.detectors.model_registry import ModelRegistry
 from gui_detector_api.domain.schemas import DetectorBackend
 from gui_detector_api.main import create_app
 from gui_detector_api.settings import AppSettings, default_models
@@ -18,7 +17,7 @@ def test_readiness_reports_load_failure():
 
     app = create_app(
         settings=settings,
-        detector_factory=DetectorFactory(registry={DetectorBackend.ULTRALYTICS: failing_builder}),
+        model_registry=ModelRegistry(builders={DetectorBackend.ULTRALYTICS: failing_builder}),
     )
 
     with TestClient(app) as client:

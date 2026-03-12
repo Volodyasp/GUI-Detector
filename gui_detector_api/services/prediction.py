@@ -20,6 +20,9 @@ class PredictionService:
         self.settings = settings
         self.detector = detector
 
+    def set_detector(self, detector: Detector | None) -> None:
+        self.detector = detector
+
     async def predict_upload(self, upload: UploadFile) -> tuple[PredictionResponse, Image.Image]:
         if self.detector is None:
             raise ModelUnavailableError("The active detector is not ready.")

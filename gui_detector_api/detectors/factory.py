@@ -1,37 +1,22 @@
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping
+from collections.abc import Mapping
 
-from gui_detector_api.detectors.base import Detector, ModelLoadError
-from gui_detector_api.detectors.gpa import GPAUltralyticsDetector
-from gui_detector_api.detectors.ui_detr import UIDetrDetector
+from gui_detector_api.detectors.base import Detector
+from gui_detector_api.detectors.model_registry import DetectorBuilder, ModelRegistry
 from gui_detector_api.domain.schemas import DetectorBackend
-from gui_detector_api.settings import AppSettings, ModelSettings
-
-DetectorBuilder = Callable[[str, ModelSettings, AppSettings], Detector]
+from gui_detector_api.settings import AppSettings
 
 
 class DetectorFactory:
-    def __init__(self, registry: Mapping[DetectorBackend, DetectorBuilder] | None = None) -> None:
-        self._registry: dict[DetectorBackend, DetectorBuilder] = {
-            DetectorBackend.ULTRALYTICS: lambda model_key, model_settings, app_settings: GPAUltralyticsDetector(
-                model_key, model_settings, app_settings
-            ),
-            DetectorBackend.RFDETR: lambda model_key, model_settings, app_settings: UIDetrDetector(
-                model_key, model_settings, app_settings
-            ),
-        }
-        if registry:
-            self._registry.update(registry)
+    def __init__(
+        self,
+        registry: Mapping[DetectorBackend, DetectorBuilder] | ModelRegistry | None = None,
+    ) -> None:
+        if isinstance(registry, ModelRegistry):
+            self.model_registry = registry
+        else:
+            self.model_registry = ModelRegistry(builders=registry)
 
     def create(self, settings: AppSettings) -> Detector:
-        model_key = settings.active_model
-        model_settings = settings.models.get(model_key)
-        if model_settings is None:
-            raise ModelLoadError(f"Active model '{model_key}' is not defined in settings.")
-
-        builder = self._registry.get(model_settings.backend)
-        if builder is None:
-            raise ModelLoadError(f"No detector builder is registered for backend '{model_settings.backend}'.")
-
-        return builder(model_key, model_settings, settings)
+        return self.model_registry.create_active_detector(settings)

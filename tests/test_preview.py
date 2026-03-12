@@ -35,11 +35,14 @@ def test_preview_renderer_draws_html_output():
 
 def test_preview_endpoint_returns_html_and_matches_json_flow(ready_app, png_bytes):
     with TestClient(ready_app) as client:
+        runtime = client.app.state.runtime
+        first_renderer = runtime.preview_renderer
         json_response = client.post("/v1/predictions", files={"image": ("sample.png", png_bytes, "image/png")})
         html_response = client.post(
             "/v1/predictions/preview",
             files={"image": ("sample.png", png_bytes, "image/png")},
         )
+        assert client.app.state.runtime.preview_renderer is first_renderer
 
     assert json_response.status_code == 200
     assert html_response.status_code == 200
