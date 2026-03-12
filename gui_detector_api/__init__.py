@@ -1,0 +1,1 @@
+"""GUI Detector API package."""
