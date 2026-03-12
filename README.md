@@ -49,3 +49,9 @@ RUN_REAL_MODEL_TESTS=1 poetry run pytest -m slow
 Configuration is defined in [`gui_detector_api/settings.py`](./gui_detector_api/settings.py) with `pydantic-settings`.
 
 The active model is selected with `active_model`, while `models` contains the backend-specific settings for all available model definitions.
+
+- `gpa_gui_detector` uses the Ultralytics runtime for `Salesforce/GPA-GUI-Detector`.
+- `ui_detr_1` uses the RF-DETR runtime for `racineai/UI-DETR-1`.
+- `device="auto"` resolves to `cuda`, then `mps`, then `cpu`.
+- Set `device="mps"` only on Apple Silicon machines where the PyTorch MPS backend is available.
+- Docker is CPU-first by default, so `device="auto"` will normally resolve to `cpu` inside the container.

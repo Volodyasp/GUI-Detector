@@ -8,6 +8,7 @@ from huggingface_hub import hf_hub_download
 from PIL import Image
 
 from gui_detector_api.domain.schemas import BoundingBox, Detection, ModelMetadata, PredictionResult
+from gui_detector_api.utils.device import DeviceResolutionError, resolve_device
 
 if TYPE_CHECKING:
     from gui_detector_api.settings import AppSettings, ModelSettings
@@ -30,6 +31,7 @@ class Detector(ABC):
         self.model_key = model_key
         self.model_settings = model_settings
         self.app_settings = app_settings
+        self.resolved_device: str | None = None
 
     @property
     def info(self) -> ModelMetadata:
@@ -62,6 +64,13 @@ class Detector(ABC):
                 local_files_only=self.model_settings.local_files_only,
             )
         )
+
+    def resolve_device(self) -> str:
+        try:
+            self.resolved_device = resolve_device(self.model_settings.device)
+        except DeviceResolutionError as exc:
+            raise ModelLoadError(str(exc)) from exc
+        return self.resolved_device
 
 
 def make_detection(

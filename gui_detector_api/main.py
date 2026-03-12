@@ -3,7 +3,6 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 
-from gui_detector_api.detectors.factory import DetectorFactory
 from gui_detector_api.detectors.model_registry import ModelRegistry
 from gui_detector_api.endpoints import register_endpoints
 from gui_detector_api.errors import APIError, api_error_handler, unexpected_error_handler, validation_error_handler
@@ -14,14 +13,11 @@ from gui_detector_api.settings import AppSettings, get_settings
 def create_app(
     *,
     settings: AppSettings | None = None,
-    detector_factory: DetectorFactory | None = None,
     model_registry: ModelRegistry | None = None,
     load_detector_on_startup: bool = True,
 ) -> FastAPI:
     app_settings = settings or get_settings()
-    resolved_registry = model_registry
-    if resolved_registry is None:
-        resolved_registry = detector_factory.model_registry if detector_factory is not None else ModelRegistry()
+    resolved_registry = model_registry or ModelRegistry()
 
     app = FastAPI(
         title=app_settings.service_name,

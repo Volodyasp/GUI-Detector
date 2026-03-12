@@ -3,7 +3,6 @@ from __future__ import annotations
 import pytest
 
 from gui_detector_api.detectors.base import ModelLoadError
-from gui_detector_api.detectors.factory import DetectorFactory
 from gui_detector_api.detectors.fake import FakeDetector
 from gui_detector_api.detectors.model_registry import ModelRegistry
 from gui_detector_api.domain.schemas import DetectorBackend
@@ -23,10 +22,9 @@ def test_model_registry_selects_configured_backend():
     assert detector.model_key == "gpa_gui_detector"
 
 
-def test_detector_factory_delegates_to_model_registry():
+def test_model_registry_rejects_unregistered_backend():
     settings = AppSettings(active_model="gpa_gui_detector", models=default_models())
     registry = ModelRegistry(builders={})
     registry._builders.clear()
-    factory = DetectorFactory(registry=registry)
     with pytest.raises(ModelLoadError):
-        factory.create(settings)
+        registry.create_active_detector(settings)

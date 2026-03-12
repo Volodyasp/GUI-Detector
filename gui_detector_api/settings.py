@@ -7,13 +7,14 @@ from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from gui_detector_api.domain.schemas import DetectorBackend
+from gui_detector_api.utils.device import DeviceName
 
 
 class ModelSettings(BaseModel):
     backend: DetectorBackend
     hf_repo_id: str
     weight_filename: str
-    device: str = "cpu"
+    device: DeviceName = "auto"
     confidence_threshold: float = 0.3
     iou_threshold: float | None = None
     image_size: int | None = None

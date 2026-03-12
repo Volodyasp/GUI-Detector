@@ -33,7 +33,9 @@ class GPAUltralyticsDetector(Detector):
         weight_path = self.resolve_weight_path()
         yolo_class = self._import_yolo_class()
         try:
+            resolved_device = self.resolve_device()
             self._model = yolo_class(str(weight_path))
+            self.resolved_device = resolved_device
         except Exception as exc:  # pragma: no cover - exercised via tests through injected fakes
             raise ModelLoadError(f"Failed to initialize GPA detector: {exc}") from exc
 
@@ -46,8 +48,8 @@ class GPAUltralyticsDetector(Detector):
             "conf": self.model_settings.confidence_threshold,
             "verbose": False,
         }
-        if self.model_settings.device:
-            kwargs["device"] = self.model_settings.device
+        if self.resolved_device:
+            kwargs["device"] = self.resolved_device
         if self.model_settings.iou_threshold is not None:
             kwargs["iou"] = self.model_settings.iou_threshold
         if self.model_settings.image_size is not None:
