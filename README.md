@@ -7,10 +7,20 @@ FastAPI service for GUI detector inference with a normalized response schema and
 
 ## Endpoints
 
-- `GET /healthz`
-- `GET /readyz`
+- `GET /`
+- `GET /v1/healthcheck`
+- `GET /v1/readiness`
 - `POST /v1/predictions`
-- `POST /v1/predictions/preview`
+
+The API uses the router prefix `/v1`.
+
+`GET /` serves a small built-in UI that uploads one image, calls `POST /v1/predictions`, draws bounding boxes in the browser, and lets you download the annotated canvas as PNG.
+
+`POST /v1/predictions` is JSON-only and returns:
+
+- `model`
+- `image`
+- `detections`
 
 ## Local Development
 
@@ -30,6 +40,25 @@ Run the API:
 
 ```bash
 poetry run uvicorn gui_detector_api.main:app --reload
+```
+
+Open the built-in UI:
+
+```bash
+http://localhost:8000/
+```
+
+Run with Docker Compose:
+
+```bash
+docker compose up --build
+```
+
+Rebuild the image after Dockerfile changes:
+
+```bash
+docker compose build --no-cache
+docker compose up -d
 ```
 
 Run tests:
@@ -55,3 +84,6 @@ The active model is selected with `active_model`, while `models` contains the ba
 - `device="auto"` resolves to `cuda`, then `mps`, then `cpu`.
 - Set `device="mps"` only on Apple Silicon machines where the PyTorch MPS backend is available.
 - Docker is CPU-first by default, so `device="auto"` will normally resolve to `cpu` inside the container.
+- `docker-compose.yaml` persists downloaded model weights in the named volume `model-cache`.
+- Docker Compose now uses the defaults from [`gui_detector_api/settings.py`](./gui_detector_api/settings.py) directly and does not rely on a `.env` override for `active_model`.
+- The container health check uses `GET /v1/readiness`, so a model-load failure marks the container as unhealthy instead of silently passing process health.

@@ -4,7 +4,6 @@ import asyncio
 import logging
 
 from fastapi import UploadFile
-from PIL import Image
 
 from gui_detector_api.detectors.base import Detector, DetectorError, DetectorPredictionError
 from gui_detector_api.domain.schemas import ImageMetadata, PredictionResponse
@@ -19,7 +18,7 @@ class PredictionService:
     def __init__(self, settings: AppSettings) -> None:
         self.settings = settings
 
-    async def predict_upload(self, detector: Detector | None, upload: UploadFile) -> tuple[PredictionResponse, Image.Image]:
+    async def predict_upload(self, detector: Detector | None, upload: UploadFile) -> PredictionResponse:
         if detector is None:
             raise ModelUnavailableError("The active detector is not ready.")
 
@@ -53,4 +52,4 @@ class PredictionService:
             ),
             detections=prediction.detections,
         )
-        return response, loaded.image
+        return response

@@ -22,7 +22,7 @@ def test_readiness_reports_load_failure():
     )
 
     with TestClient(app) as client:
-        response = client.get("/readyz")
+        response = client.get("/v1/readiness")
     assert response.status_code == 503
     assert "boom" in response.json()["detail"]
 
@@ -32,7 +32,7 @@ def test_readiness_reports_missing_active_model():
     app = create_app(settings=settings)
 
     with TestClient(app) as client:
-        response = client.get("/readyz")
+        response = client.get("/v1/readiness")
     assert response.status_code == 503
     assert "not defined" in response.json()["detail"]
 
@@ -60,6 +60,6 @@ def test_readiness_reports_invalid_explicit_device(monkeypatch):
     )
 
     with TestClient(app) as client:
-        response = client.get("/readyz")
+        response = client.get("/v1/readiness")
     assert response.status_code == 503
     assert "Requested device 'mps'" in response.json()["detail"]

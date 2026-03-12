@@ -43,7 +43,7 @@ def test_prediction_service_preserves_adapter_output_order_and_ids(png_bytes):
     detector = StubDetector("gpa_gui_detector", settings.models["gpa_gui_detector"], settings)
     upload = UploadFile(filename="sample.png", file=BytesIO(png_bytes), headers={"content-type": "image/png"})
 
-    response, _ = asyncio.run(service.predict_upload(detector, upload))
+    response = asyncio.run(service.predict_upload(detector, upload))
 
     assert [item["id"] for item in response.model_dump()["detections"]] == ["custom-id-2", "custom-id-1"]
     assert [item["label"] for item in response.model_dump()["detections"]] == ["low-confidence", "high-confidence"]

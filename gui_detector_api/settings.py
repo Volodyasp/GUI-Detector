@@ -27,7 +27,7 @@ def default_models() -> dict[str, ModelSettings]:
             backend=DetectorBackend.ULTRALYTICS,
             hf_repo_id="Salesforce/GPA-GUI-Detector",
             weight_filename="model.pt",
-            confidence_threshold=0.05,
+            confidence_threshold=0.35,
             iou_threshold=0.7,
             image_size=1280,
         ),
@@ -49,7 +49,7 @@ class AppSettings(BaseSettings):
 
     service_name: str = "gui-detector-api"
     app_version: str = "0.1.0"
-    active_model: str = "gpa_gui_detector"
+    active_model: str = "ui_detr_1"
     models: dict[str, ModelSettings] = Field(default_factory=default_models)
     model_cache_dir: Path = Path("model-cache")
     max_upload_size_bytes: int = 10 * 1024 * 1024

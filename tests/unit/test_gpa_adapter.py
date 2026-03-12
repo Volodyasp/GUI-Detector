@@ -39,3 +39,13 @@ def test_gpa_adapter_normalizes_ultralytics_results(monkeypatch):
     assert fake_model.last_kwargs["iou"] == settings.models["gpa_gui_detector"].iou_threshold
     assert result.detections[0].label == "button"
     assert result.detections[1].class_id == 1
+
+
+def test_gpa_adapter_reports_runtime_dependency_import_errors():
+    settings = AppSettings(active_model="gpa_gui_detector", models=default_models())
+    detector = GPAUltralyticsDetector("gpa_gui_detector", settings.models["gpa_gui_detector"], settings)
+
+    message = detector._build_runtime_dependency_error(ImportError("libxcb.so.1: cannot open shared object file"))
+
+    assert "libxcb.so.1" in message
+    assert "Docker" in message

@@ -1,0 +1,16 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: gui-detector-api:latest
+    container_name: gui-detector-api
+    init: true
+    ports:
+      - "8000:8000"
+    volumes:
+      - model-cache:/app/model-cache
+    restart: unless-stopped
+
+volumes:
+  model-cache:

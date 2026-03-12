@@ -4,13 +4,31 @@ from fastapi import APIRouter, Depends, FastAPI, File, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from gui_detector_api.domain.schemas import HealthResponse, PredictionResponse, ReadyResponse
+from gui_detector_api.errors import APIError
+from gui_detector_api.rendering.app_page import render_app_page
 from gui_detector_api.runtime import RuntimeState
 
-router = APIRouter()
+page_router = APIRouter()
+api_router = APIRouter(prefix="/v1")
 
 
 def get_runtime(request: Request) -> RuntimeState:
     return request.app.state.runtime
+
+
+def _reject_legacy_prediction_query_params(request: Request) -> None:
+    if "image_format" in request.query_params:
+        raise APIError(
+            status_code=400,
+            error="unsupported_parameter",
+            detail="Query parameter 'image_format' is no longer supported. Use the web UI at '/' or render bounding boxes on the client.",
+        )
+    if "include_image" in request.query_params:
+        raise APIError(
+            status_code=400,
+            error="unsupported_parameter",
+            detail="Query parameter 'include_image' is no longer supported. Use the web UI at '/' or render bounding boxes on the client.",
+        )
 
 
 def _build_ready_response(runtime: RuntimeState) -> ReadyResponse:
@@ -34,16 +52,21 @@ def _build_not_ready_response(runtime: RuntimeState) -> JSONResponse:
     return JSONResponse(status_code=503, content=payload.model_dump(mode="json"))
 
 
-async def _run_prediction(runtime: RuntimeState, image: UploadFile) -> tuple[PredictionResponse, object]:
+async def _run_prediction(runtime: RuntimeState, image: UploadFile) -> PredictionResponse:
     return await runtime.prediction_service.predict_upload(runtime.detector, image)
 
 
-@router.get("/healthz", response_model=HealthResponse, tags=["health"])
+@page_router.get("/", response_class=HTMLResponse, include_in_schema=False)
+async def app_shell() -> HTMLResponse:
+    return HTMLResponse(render_app_page())
+
+
+@api_router.get("/healthcheck", response_model=HealthResponse, tags=["health"])
 async def healthcheck(runtime: RuntimeState = Depends(get_runtime)) -> HealthResponse:
     return HealthResponse(service=runtime.settings.service_name, version=runtime.settings.app_version)
 
 
-@router.get("/readyz", response_model=ReadyResponse, tags=["health"])
+@api_router.get("/readiness", response_model=ReadyResponse, tags=["health"])
 async def readiness(runtime: RuntimeState = Depends(get_runtime)):
     model_settings = runtime.settings.models.get(runtime.settings.active_model)
     if runtime.ready and runtime.detector is not None and model_settings is not None:
@@ -51,23 +74,21 @@ async def readiness(runtime: RuntimeState = Depends(get_runtime)):
     return _build_not_ready_response(runtime)
 
 
-@router.post("/v1/predictions", response_model=PredictionResponse, tags=["predictions"])
+@api_router.post(
+    "/predictions",
+    response_model=PredictionResponse,
+    response_model_exclude_none=True,
+    tags=["predictions"],
+)
 async def predict(
+    request: Request,
     image: UploadFile = File(...),
     runtime: RuntimeState = Depends(get_runtime),
-):
-    response, _ = await _run_prediction(runtime, image)
-    return response
-
-
-@router.post("/v1/predictions/preview", response_class=HTMLResponse, tags=["predictions"])
-async def preview_prediction(
-    image: UploadFile = File(...),
-    runtime: RuntimeState = Depends(get_runtime),
-) -> HTMLResponse:
-    response, source_image = await _run_prediction(runtime, image)
-    return HTMLResponse(runtime.preview_renderer.render(response, source_image))
+) -> PredictionResponse:
+    _reject_legacy_prediction_query_params(request)
+    return await _run_prediction(runtime, image)
 
 
 def register_endpoints(app: FastAPI) -> None:
-    app.include_router(router)
+    app.include_router(page_router)
+    app.include_router(api_router)

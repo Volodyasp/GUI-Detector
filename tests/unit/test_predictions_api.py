@@ -13,6 +13,20 @@ def test_prediction_endpoint_returns_normalized_json(ready_app, png_bytes):
     payload = response.json()
     assert payload["model"]["key"] == "gpa_gui_detector"
     assert payload["detections"][0]["confidence"] >= payload["detections"][1]["confidence"]
+    assert "annotated_image" not in payload
+
+
+def test_prediction_endpoint_rejects_legacy_image_format_parameter(ready_app, png_bytes):
+    with TestClient(ready_app) as client:
+        response = client.post(
+            "/v1/predictions?image_format=base64",
+            files={"image": ("sample.png", png_bytes, "image/png")},
+        )
+
+    assert response.status_code == 400
+    payload = response.json()
+    assert payload["error"] == "unsupported_parameter"
+    assert "image_format" in payload["detail"]
 
 
 def test_prediction_endpoint_rejects_invalid_content_type(ready_app):
@@ -59,5 +73,5 @@ def test_prediction_service_is_a_lifespan_singleton(ready_app):
     with TestClient(ready_app) as client:
         runtime = client.app.state.runtime
         first_service = runtime.prediction_service
-        client.get("/healthz")
+        client.get("/v1/healthcheck")
         assert client.app.state.runtime.prediction_service is first_service

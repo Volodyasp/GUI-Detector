@@ -23,11 +23,22 @@ class GPAUltralyticsDetector(Detector):
     def _import_yolo_class(self):
         try:
             from ultralytics import YOLO
+        except ModuleNotFoundError as exc:
+            if exc.name == "ultralytics":
+                raise ModelLoadError(
+                    "ultralytics is not installed. Run `poetry install --with models` to enable GPA inference."
+                ) from exc
+            raise ModelLoadError(self._build_runtime_dependency_error(exc)) from exc
         except ImportError as exc:
-            raise ModelLoadError(
-                "ultralytics is not installed. Run `poetry install --with models` to enable GPA inference."
-            ) from exc
+            raise ModelLoadError(self._build_runtime_dependency_error(exc)) from exc
         return YOLO
+
+    def _build_runtime_dependency_error(self, exc: BaseException) -> str:
+        return (
+            "Failed to import Ultralytics runtime dependencies: "
+            f"{exc}. If you are running in Docker, install the OpenCV system libraries "
+            "(for example `libgl1`, `libglib2.0-0`, `libsm6`, `libxext6`, `libxrender1`, `libxcb1`)."
+        )
 
     def load(self) -> None:
         weight_path = self.resolve_weight_path()
