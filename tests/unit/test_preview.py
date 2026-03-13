@@ -14,7 +14,10 @@ def test_root_ui_returns_html_shell(ready_app):
     assert 'id="detect-button"' in response.text
     assert 'id="download-button"' in response.text
     assert 'id="preview-canvas"' in response.text
+    assert 'fetch("/v1/readiness")' in response.text
     assert 'fetch("/v1/predictions"' in response.text
+    assert 'query-texts' not in response.text
+    assert 'query-image-input' not in response.text
 
 
 def test_removed_preview_endpoint_returns_404(ready_app, png_bytes):

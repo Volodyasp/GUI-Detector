@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from io import BytesIO
+from pathlib import Path
 
 import pytest
 from PIL import Image
@@ -19,9 +20,18 @@ def make_png_bytes(color: str = "white") -> bytes:
     return buffer.getvalue()
 
 
-def build_settings(active_model: str = "gpa_gui_detector") -> AppSettings:
+def build_settings(
+    *,
+    root_dir: Path,
+    active_model: str = "gpa_gui_detector",
+) -> AppSettings:
     models = default_models()
-    return AppSettings(active_model=active_model, models=models, model_cache_dir="model-cache-test")
+    return AppSettings(
+        active_model=active_model,
+        models=models,
+        model_cache_dir=root_dir / "model-cache-test",
+        class_registry_dir=root_dir / "class-registry-test",
+    )
 
 
 def sample_detections() -> list[Detection]:
@@ -49,8 +59,8 @@ def png_bytes() -> bytes:
 
 
 @pytest.fixture
-def test_settings() -> AppSettings:
-    return build_settings()
+def test_settings(tmp_path) -> AppSettings:
+    return build_settings(root_dir=tmp_path)
 
 
 @pytest.fixture

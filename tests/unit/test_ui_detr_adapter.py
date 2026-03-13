@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from gui_detector_api.detectors.base import PredictionInputs
 from gui_detector_api.detectors.ui_detr import UIDetrDetector
 from gui_detector_api.settings import AppSettings, default_models
 
@@ -31,7 +32,7 @@ def test_ui_detr_adapter_normalizes_predictions(monkeypatch):
     monkeypatch.setattr(detector, "_import_model_class", lambda: (lambda **kwargs: FakeRFDETRModel(**kwargs)))
 
     detector.load()
-    result = detector.predict(image=object())
+    result = detector.predict(PredictionInputs(image=object()))
 
     assert detector._model.kwargs["pretrain_weights"] == "model.pth"
     assert detector._model.kwargs["device"] == "mps"

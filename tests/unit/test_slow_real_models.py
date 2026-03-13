@@ -18,27 +18,42 @@ def _require_real_model_tests():
         pytest.skip("Real model smoke tests are disabled. Set RUN_REAL_MODEL_TESTS=1 to enable them.")
 
 
-def test_gpa_real_model_load_smoke():
+def test_gpa_real_model_load_smoke(tmp_path):
     _require_real_model_tests()
-    settings = AppSettings(active_model="gpa_gui_detector", models=default_models())
+    settings = AppSettings(
+        active_model="gpa_gui_detector",
+        models=default_models(),
+        model_cache_dir=tmp_path / "model-cache",
+        class_registry_dir=tmp_path / "class-registry",
+    )
     detector = GPAUltralyticsDetector("gpa_gui_detector", settings.models["gpa_gui_detector"], settings)
     detector.load()
     assert detector.info.key == "gpa_gui_detector"
 
 
-def test_ui_detr_real_model_load_smoke():
+def test_ui_detr_real_model_load_smoke(tmp_path):
     _require_real_model_tests()
-    settings = AppSettings(active_model="ui_detr_1", models=default_models())
+    settings = AppSettings(
+        active_model="ui_detr_1",
+        models=default_models(),
+        model_cache_dir=tmp_path / "model-cache",
+        class_registry_dir=tmp_path / "class-registry",
+    )
     detector = UIDetrDetector("ui_detr_1", settings.models["ui_detr_1"], settings)
     detector.load()
     assert detector.info.key == "ui_detr_1"
 
 
-def test_gpa_real_model_mps_smoke_when_available():
+def test_gpa_real_model_mps_smoke_when_available(tmp_path):
     _require_real_model_tests()
     if resolve_device("auto") != "mps":
         pytest.skip("MPS is not the active auto-selected device in this environment.")
-    settings = AppSettings(active_model="gpa_gui_detector", models=default_models())
+    settings = AppSettings(
+        active_model="gpa_gui_detector",
+        models=default_models(),
+        model_cache_dir=tmp_path / "model-cache",
+        class_registry_dir=tmp_path / "class-registry",
+    )
     settings.models["gpa_gui_detector"].device = "mps"
     detector = GPAUltralyticsDetector("gpa_gui_detector", settings.models["gpa_gui_detector"], settings)
     detector.load()

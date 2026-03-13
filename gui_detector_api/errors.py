@@ -30,6 +30,11 @@ class ModelUnavailableError(APIError):
         super().__init__(status_code=503, error="model_unavailable", detail=detail)
 
 
+class EmbeddingUnavailableError(APIError):
+    def __init__(self, detail: str) -> None:
+        super().__init__(status_code=503, error="embedding_unavailable", detail=detail)
+
+
 class PredictionTimeoutError(APIError):
     def __init__(self, detail: str) -> None:
         super().__init__(status_code=504, error="prediction_timeout", detail=detail)
@@ -38,6 +43,21 @@ class PredictionTimeoutError(APIError):
 class PredictionExecutionError(APIError):
     def __init__(self, detail: str) -> None:
         super().__init__(status_code=500, error="prediction_failed", detail=detail)
+
+
+class ClassificationExecutionError(APIError):
+    def __init__(self, detail: str) -> None:
+        super().__init__(status_code=500, error="classification_failed", detail=detail)
+
+
+class InvalidClassDefinitionError(APIError):
+    def __init__(self, detail: str) -> None:
+        super().__init__(status_code=400, error="invalid_class_definition", detail=detail)
+
+
+class ClassNotFoundError(APIError):
+    def __init__(self, class_id: str) -> None:
+        super().__init__(status_code=404, error="class_not_found", detail=f"Class '{class_id}' does not exist.")
 
 
 async def api_error_handler(_: Request, exc: APIError) -> JSONResponse:

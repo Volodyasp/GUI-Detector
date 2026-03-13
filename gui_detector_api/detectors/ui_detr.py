@@ -2,12 +2,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from PIL import Image
-
 from gui_detector_api.detectors.base import (
     Detector,
     DetectorPredictionError,
     ModelLoadError,
+    PredictionInputs,
     make_detection,
     normalize_result,
     to_list,
@@ -45,12 +44,12 @@ class UIDetrDetector(Detector):
         except Exception as exc:  # pragma: no cover - exercised via tests through injected fakes
             raise ModelLoadError(f"Failed to initialize UI-DETR detector: {exc}") from exc
 
-    def predict(self, image: Image.Image) -> PredictionResult:
+    def predict(self, inputs: PredictionInputs) -> PredictionResult:
         if self._model is None:
             raise DetectorPredictionError("UI-DETR detector has not been loaded.")
 
         try:
-            results = self._model.predict(image, threshold=self.model_settings.confidence_threshold)
+            results = self._model.predict(inputs.image, threshold=self.model_settings.confidence_threshold)
         except Exception as exc:
             raise DetectorPredictionError(f"UI-DETR prediction failed: {exc}") from exc
 

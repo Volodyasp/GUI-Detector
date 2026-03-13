@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+from gui_detector_api.detectors.base import PredictionInputs
 from gui_detector_api.detectors.gpa import GPAUltralyticsDetector
 from gui_detector_api.settings import AppSettings, default_models
 
@@ -32,7 +33,7 @@ def test_gpa_adapter_normalizes_ultralytics_results(monkeypatch):
     monkeypatch.setattr(detector, "_import_yolo_class", lambda: (lambda _: fake_model))
 
     detector.load()
-    result = detector.predict(image=object())
+    result = detector.predict(PredictionInputs(image=object()))
 
     assert fake_model.last_kwargs["device"] == "mps"
     assert fake_model.last_kwargs["imgsz"] == settings.models["gpa_gui_detector"].image_size

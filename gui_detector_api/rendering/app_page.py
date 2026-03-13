@@ -129,6 +129,7 @@ def render_app_page() -> str:
         border-radius: 16px;
         background: rgba(255, 255, 255, 0.84);
         color: var(--ink);
+        font: inherit;
       }
 
       .button-row {
@@ -215,7 +216,7 @@ def render_app_page() -> str:
         display: grid;
         gap: 10px;
         padding: 18px 20px 0;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
       }
 
       .meta-card {
@@ -275,6 +276,17 @@ def render_app_page() -> str:
         }
 
         .meta-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 640px) {
+        main {
+          width: min(100vw, calc(100vw - 18px));
+          padding: 18px 0 24px;
+        }
+
+        .meta-grid {
           grid-template-columns: 1fr;
         }
       }
@@ -287,7 +299,8 @@ def render_app_page() -> str:
         <h1>Upload a screenshot. Review detections. Download the annotated result.</h1>
         <p>
           This page sends your image to <code>/v1/predictions</code>, receives normalized detections as JSON,
-          and draws every bounding box directly in the browser so the API can stay lightweight and JSON-only.
+          and draws the final accepted boxes directly in the browser. If server-side CLIP classes are configured,
+          only detections that pass cosine-similarity classification are rendered here.
         </p>
       </section>
 
@@ -322,7 +335,7 @@ def render_app_page() -> str:
         <article class="panel">
           <div class="panel-head">
             <h2>Detection Summary</h2>
-            <p>Model metadata and normalized detections from the API response.</p>
+            <p>Raw detector output and the filtered classification result returned by the API.</p>
           </div>
           <div class="meta-grid">
             <div class="meta-card">
@@ -334,8 +347,12 @@ def render_app_page() -> str:
               <strong id="meta-backend">—</strong>
             </div>
             <div class="meta-card">
-              <span>Detections</span>
-              <strong id="meta-count">0</strong>
+              <span>Raw Detections</span>
+              <strong id="meta-raw-count">0</strong>
+            </div>
+            <div class="meta-card">
+              <span>Classified</span>
+              <strong id="meta-filtered-count">0</strong>
             </div>
           </div>
           <div class="detections">
@@ -344,12 +361,14 @@ def render_app_page() -> str:
                 <tr>
                   <th>Label</th>
                   <th>Confidence</th>
+                  <th>Predicted Class</th>
+                  <th>Similarity</th>
                   <th>Bounding Box</th>
                 </tr>
               </thead>
               <tbody id="detections-body">
                 <tr>
-                  <td colspan="3">No detections yet.</td>
+                  <td colspan="5">No detections yet.</td>
                 </tr>
               </tbody>
             </table>
@@ -371,15 +390,18 @@ def render_app_page() -> str:
       const detectionsNote = document.getElementById("detections-note");
       const metaModel = document.getElementById("meta-model");
       const metaBackend = document.getElementById("meta-backend");
-      const metaCount = document.getElementById("meta-count");
+      const metaRawCount = document.getElementById("meta-raw-count");
+      const metaFilteredCount = document.getElementById("meta-filtered-count");
       const context = canvas.getContext("2d");
 
       const state = {
         file: null,
         image: null,
         objectUrl: null,
-        detections: [],
-        response: null,
+        rawDetections: [],
+        renderedDetections: [],
+        classificationApplied: false,
+        runtimeReady: false,
       };
 
       function setStatus(message, tone = "default") {
@@ -391,17 +413,43 @@ def render_app_page() -> str:
         }
       }
 
+      function refreshDetectAvailability() {
+        detectButton.disabled = !state.file || !state.image || !state.runtimeReady;
+      }
+
+      function applyReadiness(payload) {
+        state.runtimeReady = payload.status === "ready";
+        metaModel.textContent = payload.active_model || "—";
+        metaBackend.textContent = payload.backend || "—";
+        refreshDetectAvailability();
+      }
+
+      async function bootstrapReadiness() {
+        try {
+          const response = await fetch("/v1/readiness");
+          const payload = await response.json();
+          applyReadiness(payload);
+          if (!response.ok) {
+            setStatus(payload.detail || "Active detector is not ready.", "warn");
+          }
+        } catch (error) {
+          state.runtimeReady = false;
+          setStatus("Could not load active detector readiness.", "error");
+          refreshDetectAvailability();
+        }
+      }
+
       function resetSummary() {
-        metaModel.textContent = "—";
-        metaBackend.textContent = "—";
-        metaCount.textContent = "0";
-        detectionsBody.innerHTML = '<tr><td colspan="3">No detections yet.</td></tr>';
+        metaRawCount.textContent = "0";
+        metaFilteredCount.textContent = "0";
+        detectionsBody.innerHTML = '<tr><td colspan="5">No detections yet.</td></tr>';
         detectionsNote.textContent = "No detections found.";
       }
 
       function clearImageState() {
-        state.detections = [];
-        state.response = null;
+        state.rawDetections = [];
+        state.renderedDetections = [];
+        state.classificationApplied = false;
         downloadButton.disabled = true;
         resetSummary();
         if (!state.image) {
@@ -413,30 +461,51 @@ def render_app_page() -> str:
       }
 
       function updateSummary(payload) {
+        const rawDetections = payload.detections || [];
+        const classifiedDetections = payload.classified_detections || [];
+        const classification = payload.classification || { applied: false };
+        const renderedDetections = classification.applied ? classifiedDetections : rawDetections;
+
+        state.rawDetections = rawDetections;
+        state.renderedDetections = renderedDetections;
+        state.classificationApplied = Boolean(classification.applied);
+
         metaModel.textContent = payload.model.key;
         metaBackend.textContent = payload.model.backend;
-        metaCount.textContent = String(payload.detections.length);
+        metaRawCount.textContent = String(rawDetections.length);
+        metaFilteredCount.textContent = String(classifiedDetections.length);
 
-        if (payload.detections.length === 0) {
-          detectionsBody.innerHTML = '<tr><td colspan="3">No detections found.</td></tr>';
-          detectionsNote.textContent = "No detections found.";
+        if (renderedDetections.length === 0) {
+          detectionsBody.innerHTML = '<tr><td colspan="5">No detections available for rendering.</td></tr>';
+          detectionsNote.textContent = classification.applied
+            ? `Classification kept 0 detections out of ${rawDetections.length} raw detections.`
+            : "No detections found.";
           return;
         }
 
-        detectionsBody.innerHTML = payload.detections.map((detection) => {
+        detectionsBody.innerHTML = renderedDetections.map((detection) => {
           const box = detection.bbox;
           const bbox = [box.x_min, box.y_min, box.x_max, box.y_max]
             .map((value) => Number(value).toFixed(1))
             .join(", ");
+          const predictedClass = detection.predicted_class || "—";
+          const similarity = detection.similarity_score === undefined
+            ? "—"
+            : Number(detection.similarity_score).toFixed(3);
           return `
             <tr>
               <td>${escapeHtml(detection.label)}</td>
               <td>${Number(detection.confidence).toFixed(3)}</td>
+              <td>${escapeHtml(predictedClass)}</td>
+              <td>${similarity}</td>
               <td>${bbox}</td>
             </tr>
           `;
         }).join("");
-        detectionsNote.textContent = `${payload.detections.length} detection${payload.detections.length === 1 ? "" : "s"} rendered on the canvas.`;
+
+        detectionsNote.textContent = classification.applied
+          ? `Classification kept ${renderedDetections.length} detections out of ${rawDetections.length} raw detections.`
+          : `${renderedDetections.length} detection${renderedDetections.length === 1 ? "" : "s"} rendered on the canvas.`;
       }
 
       function escapeHtml(value) {
@@ -446,6 +515,13 @@ def render_app_page() -> str:
           .replaceAll(">", "&gt;")
           .replaceAll('"', "&quot;")
           .replaceAll("'", "&#39;");
+      }
+
+      function buildCaption(detection) {
+        if (detection.predicted_class) {
+          return `${detection.predicted_class} ${Number(detection.similarity_score).toFixed(2)}`;
+        }
+        return `${detection.label} ${Number(detection.confidence).toFixed(2)}`;
       }
 
       function drawScene() {
@@ -465,13 +541,13 @@ def render_app_page() -> str:
         context.font = `${Math.max(14, Math.round(width / 48))}px "SF Mono", Menlo, monospace`;
         context.textBaseline = "top";
 
-        for (const detection of state.detections) {
-          const { bbox, label, confidence } = detection;
+        for (const detection of state.renderedDetections) {
+          const { bbox } = detection;
           const x = Number(bbox.x_min);
           const y = Number(bbox.y_min);
           const boxWidth = Number(bbox.x_max) - x;
           const boxHeight = Number(bbox.y_max) - y;
-          const caption = `${label} ${Number(confidence).toFixed(2)}`;
+          const caption = buildCaption(detection);
           const textWidth = context.measureText(caption).width;
           const textHeight = Math.max(18, Math.round(width / 42));
           const tagX = x;
@@ -521,6 +597,10 @@ def render_app_page() -> str:
           setStatus("Choose an image first.", "warn");
           return;
         }
+        if (!state.runtimeReady) {
+          setStatus("The active detector is not ready yet.", "warn");
+          return;
+        }
 
         detectButton.disabled = true;
         downloadButton.disabled = true;
@@ -540,26 +620,22 @@ def render_app_page() -> str:
             throw new Error(payload.detail || payload.error || `Request failed with status ${response.status}`);
           }
 
-          state.response = payload;
-          state.detections = payload.detections || [];
           updateSummary(payload);
           drawScene();
           downloadButton.disabled = false;
           setStatus(
-            state.detections.length === 0
-              ? "Detection finished. No detections found."
-              : `Detection finished. ${state.detections.length} detection${state.detections.length === 1 ? "" : "s"} found.`
+            state.renderedDetections.length === 0
+              ? "Detection finished. No renderable detections found."
+              : `Detection finished. ${state.renderedDetections.length} detection${state.renderedDetections.length === 1 ? "" : "s"} ready.`
           );
         } catch (error) {
-          state.detections = [];
-          updateSummary({
-            model: { key: "—", backend: "—" },
-            detections: [],
-          });
-          drawScene();
+          clearImageState();
+          if (state.image) {
+            drawScene();
+          }
           setStatus(error instanceof Error ? error.message : "Unexpected error during detection.", "error");
         } finally {
-          detectButton.disabled = false;
+          refreshDetectAvailability();
         }
       }
 
@@ -587,13 +663,11 @@ def render_app_page() -> str:
       fileInput.addEventListener("change", async (event) => {
         const [file] = event.target.files || [];
         state.file = file || null;
-        state.detections = [];
-        state.response = null;
 
         if (!file) {
           state.image = null;
           clearImageState();
-          detectButton.disabled = true;
+          refreshDetectAvailability();
           setStatus("Choose an image to begin.");
           return;
         }
@@ -601,12 +675,12 @@ def render_app_page() -> str:
         try {
           await loadImage(file);
           clearImageState();
-          detectButton.disabled = false;
+          refreshDetectAvailability();
           setStatus("Image loaded. Click Detect to fetch bounding boxes.");
         } catch (error) {
           state.image = null;
           clearImageState();
-          detectButton.disabled = true;
+          refreshDetectAvailability();
           setStatus(error instanceof Error ? error.message : "Could not read the selected image.", "error");
         }
       });
@@ -614,6 +688,7 @@ def render_app_page() -> str:
       detectButton.addEventListener("click", detect);
       downloadButton.addEventListener("click", downloadCanvas);
       resetSummary();
+      bootstrapReadiness();
     </script>
   </body>
 </html>"""

@@ -10,8 +10,13 @@ from gui_detector_api.main import create_app
 from gui_detector_api.settings import AppSettings, default_models
 
 
-def test_readiness_reports_load_failure():
-    settings = AppSettings(active_model="gpa_gui_detector", models=default_models())
+def test_readiness_reports_load_failure(tmp_path):
+    settings = AppSettings(
+        active_model="gpa_gui_detector",
+        models=default_models(),
+        model_cache_dir=tmp_path / "model-cache",
+        class_registry_dir=tmp_path / "class-registry",
+    )
 
     def failing_builder(model_key, model_settings, app_settings):
         return FakeDetector(model_key, model_settings, app_settings, load_error="boom")
@@ -27,8 +32,13 @@ def test_readiness_reports_load_failure():
     assert "boom" in response.json()["detail"]
 
 
-def test_readiness_reports_missing_active_model():
-    settings = AppSettings(active_model="missing", models=default_models())
+def test_readiness_reports_missing_active_model(tmp_path):
+    settings = AppSettings(
+        active_model="missing",
+        models=default_models(),
+        model_cache_dir=tmp_path / "model-cache",
+        class_registry_dir=tmp_path / "class-registry",
+    )
     app = create_app(settings=settings)
 
     with TestClient(app) as client:
@@ -37,8 +47,13 @@ def test_readiness_reports_missing_active_model():
     assert "not defined" in response.json()["detail"]
 
 
-def test_readiness_reports_invalid_explicit_device(monkeypatch):
-    settings = AppSettings(active_model="gpa_gui_detector", models=default_models())
+def test_readiness_reports_invalid_explicit_device(monkeypatch, tmp_path):
+    settings = AppSettings(
+        active_model="gpa_gui_detector",
+        models=default_models(),
+        model_cache_dir=tmp_path / "model-cache",
+        class_registry_dir=tmp_path / "class-registry",
+    )
     settings.models["gpa_gui_detector"].device = "mps"
 
     class DeviceCheckingDetector(FakeDetector):

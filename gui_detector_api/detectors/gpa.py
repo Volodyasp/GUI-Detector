@@ -2,12 +2,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from PIL import Image
-
 from gui_detector_api.detectors.base import (
     Detector,
     DetectorPredictionError,
     ModelLoadError,
+    PredictionInputs,
     make_detection,
     normalize_result,
     to_list,
@@ -50,12 +49,12 @@ class GPAUltralyticsDetector(Detector):
         except Exception as exc:  # pragma: no cover - exercised via tests through injected fakes
             raise ModelLoadError(f"Failed to initialize GPA detector: {exc}") from exc
 
-    def predict(self, image: Image.Image) -> PredictionResult:
+    def predict(self, inputs: PredictionInputs) -> PredictionResult:
         if self._model is None:
             raise DetectorPredictionError("GPA detector has not been loaded.")
 
         kwargs: dict[str, Any] = {
-            "source": image,
+            "source": inputs.image,
             "conf": self.model_settings.confidence_threshold,
             "verbose": False,
         }

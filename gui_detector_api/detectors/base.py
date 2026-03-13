@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -26,6 +27,11 @@ class DetectorPredictionError(DetectorError):
     """Raised when prediction execution fails."""
 
 
+@dataclass(slots=True)
+class PredictionInputs:
+    image: Image.Image
+
+
 class Detector(ABC):
     def __init__(self, model_key: str, model_settings: ModelSettings, app_settings: AppSettings) -> None:
         self.model_key = model_key
@@ -46,10 +52,14 @@ class Detector(ABC):
         """Load the model runtime into memory."""
 
     @abstractmethod
-    def predict(self, image: Image.Image) -> PredictionResult:
-        """Run synchronous prediction against an in-memory image."""
+    def predict(self, inputs: PredictionInputs) -> PredictionResult:
+        """Run synchronous prediction against in-memory inputs."""
 
     def resolve_weight_path(self) -> Path:
+        if not self.model_settings.weight_filename:
+            raise ModelLoadError(
+                f"Model '{self.model_key}' does not define a weight filename for single-file checkpoint loading."
+            )
         configured_path = Path(self.model_settings.weight_filename).expanduser()
         if configured_path.exists():
             return configured_path

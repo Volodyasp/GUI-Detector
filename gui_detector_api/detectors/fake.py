@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-from PIL import Image
-
-from gui_detector_api.detectors.base import Detector, ModelLoadError, normalize_result
+from gui_detector_api.detectors.base import Detector, ModelLoadError, PredictionInputs, normalize_result
 from gui_detector_api.domain.schemas import Detection, PredictionResult
 
 
@@ -28,8 +26,8 @@ class FakeDetector(Detector):
             raise ModelLoadError(self._load_error)
         self.loaded = True
 
-    def predict(self, image: Image.Image) -> PredictionResult:
-        del image
+    def predict(self, inputs: PredictionInputs) -> PredictionResult:
+        del inputs
         if self._predict_error:
             raise RuntimeError(self._predict_error)
         return normalize_result(self._detections)

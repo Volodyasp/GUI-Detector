@@ -26,6 +26,11 @@ class Detection(BaseModel):
     bbox: BoundingBox
 
 
+class ClassifiedDetection(Detection):
+    predicted_class: str
+    similarity_score: float = Field(ge=-1.0, le=1.0)
+
+
 class PredictionResult(BaseModel):
     detections: list[Detection] = Field(default_factory=list)
 
@@ -44,12 +49,35 @@ class ImageMetadata(BaseModel):
     size_bytes: int
 
 
+class ClassificationSummary(BaseModel):
+    applied: bool = False
+    class_count: int = 0
+    knn_k: int | None = None
+    similarity_threshold: float | None = None
+
+
 class PredictionResponse(BaseModel):
     model_config = ConfigDict(use_enum_values=True)
 
     model: ModelMetadata
     image: ImageMetadata
     detections: list[Detection]
+    classified_detections: list[ClassifiedDetection] = Field(default_factory=list)
+    classification: ClassificationSummary = Field(default_factory=ClassificationSummary)
+
+
+class UserClassResponse(BaseModel):
+    class_id: str
+    name: str
+    texts: list[str] = Field(default_factory=list)
+    image_filenames: list[str] = Field(default_factory=list)
+    text_count: int = 0
+    image_count: int = 0
+    exemplar_count: int = 0
+
+
+class UserClassesResponse(BaseModel):
+    classes: list[UserClassResponse] = Field(default_factory=list)
 
 
 class ErrorResponse(BaseModel):

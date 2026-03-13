@@ -22,6 +22,7 @@ def test_readiness_returns_200_when_detector_is_loaded(ready_app):
         response = client.get("/v1/readiness")
     assert response.status_code == 200
     assert response.json()["status"] == "ready"
+    assert response.json()["backend"] == "ultralytics"
 
 
 def test_app_starts_and_stops_cleanly(ready_app):
