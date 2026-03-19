@@ -6,6 +6,8 @@ from fastapi import APIRouter, Depends, FastAPI, File, Form, Request, Response, 
 from fastapi.responses import JSONResponse
 
 from gui_detector_api.domain.schemas import (
+    BatchClassesRequest,
+    BatchClassesResponse,
     HealthResponse,
     PredictionResponse,
     ReadyResponse,
@@ -102,6 +104,22 @@ async def create_class(
         texts=texts,
         images=images,
     )
+
+
+@api_router.post("/classes/batch", response_model=BatchClassesResponse, tags=["classes"])
+async def batch_create_classes(
+    payload: BatchClassesRequest,
+    runtime: RuntimeState = Depends(get_runtime),
+) -> BatchClassesResponse:
+    created = []
+    for entry in payload.classes:
+        result = await runtime.class_registry.create_class(
+            name=entry.name,
+            texts=entry.texts or None,
+            images=None,
+        )
+        created.append(result)
+    return BatchClassesResponse(created=created)
 
 
 @api_router.put("/classes/{class_id}", response_model=UserClassResponse, tags=["classes"])

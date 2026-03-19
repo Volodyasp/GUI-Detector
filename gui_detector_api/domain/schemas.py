@@ -81,6 +81,19 @@ class UserClassesResponse(BaseModel):
     classes: list[UserClassResponse] = Field(default_factory=list)
 
 
+class BatchClassInput(BaseModel):
+    name: str
+    texts: list[str] = Field(default_factory=list)
+
+
+class BatchClassesRequest(BaseModel):
+    classes: list[BatchClassInput]
+
+
+class BatchClassesResponse(BaseModel):
+    created: list[UserClassResponse] = Field(default_factory=list)
+
+
 class ErrorResponse(BaseModel):
     error: str
     detail: str
