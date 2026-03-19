@@ -1,13 +1,13 @@
 # GUI Detector API
 
-FastAPI service for GUI detector inference with a normalized response schema, two pluggable detector backends, and optional CLIP-based post-classification over user-defined classes.
+FastAPI service for GUI detector inference with a normalized response schema, two pluggable detector backends, and optional OCR-primary post-classification with embedding fallback over user-defined classes.
 
 ## Supported detectors
 
 - `Salesforce/GPA-GUI-Detector` through Ultralytics
 - `racineai/UI-DETR-1` through RF-DETR
 
-Post-classification uses `openai/clip-vit-large-patch14` for image and text embeddings. CLIP is used only for embeddings and cosine-similarity classification, not for object detection.
+Post-classification uses an OCR-primary flow: detected crops are first matched against text exemplars via fuzzy OCR matching, then unmatched crops fall back to embedding-based similarity using `openai/clip-vit-base-patch32`. Embeddings are used only for cosine-similarity classification, not for object detection.
 
 ## Endpoints
 
@@ -32,7 +32,7 @@ The API uses the router prefix `/v1`.
 - `classified_detections`
 - `classification`
 
-`detections` is the raw detector output. `classified_detections` contains only the detections that matched a user-defined class through CLIP cosine similarity and KNN scoring. If no classes are defined, `classification.applied` is `false` and `classified_detections` is empty.
+`detections` is the raw detector output. `classified_detections` contains only the detections that matched a user-defined class through OCR text matching or embedding cosine similarity with KNN scoring. If no classes are defined, `classification.applied` is `false` and `classified_detections` is empty.
 
 Multipart request fields for `POST /v1/predictions`:
 
@@ -53,7 +53,7 @@ Each class can contain:
 - `texts[]`
 - `images[]`
 
-At least one text or image exemplar is required. Texts and images are embedded with CLIP, stored as normalized vectors, and reused for prediction-time post-classification.
+At least one text or image exemplar is required. Texts and images are embedded with `openai/clip-vit-base-patch32`, stored as normalized vectors, and reused for prediction-time post-classification.
 
 ## Local Development
 
@@ -112,7 +112,7 @@ Configuration is defined in [`/Users/vladimir/Projects/GUI-Detector/gui_detector
 
 - `active_model` selects the detector runtime.
 - `models` contains detector-specific settings for GPA and UI-DETR.
-- `embedding_model` configures CLIP embeddings through `openai/clip-vit-large-patch14`.
+- `embedding_model` configures CLIP embeddings through `openai/clip-vit-base-patch32`.
 - `classification_knn_k` controls how many nearest exemplar embeddings are considered per crop.
 - `classification_similarity_threshold` is the acceptance threshold for a classified detection.
 - `class_registry_dir` controls where the persistent class registry and assets are stored.

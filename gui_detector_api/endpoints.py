@@ -49,7 +49,7 @@ async def _reject_legacy_prediction_form_fields(request: Request) -> None:
         error="unsupported_parameter",
         detail=(
             "Fields 'query_texts' and 'query_image' are no longer supported on /v1/predictions. "
-            "Create server-side classes via /v1/classes and use CLIP post-classification instead."
+            "Create server-side classes via /v1/classes and use OCR post-classification instead."
         ),
     )
 

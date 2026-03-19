@@ -4,7 +4,6 @@ import asyncio
 import json
 import shutil
 from dataclasses import dataclass
-from pathlib import Path
 from threading import RLock
 from uuid import uuid4
 
@@ -13,12 +12,13 @@ from pydantic import BaseModel, Field
 
 from gui_detector_api.domain.schemas import UserClassResponse, UserClassesResponse
 from gui_detector_api.errors import ClassNotFoundError, InvalidClassDefinitionError
-from gui_detector_api.services.embeddings import CLIPEmbeddingService
+from gui_detector_api.services.embeddings import EmbeddingService
+from gui_detector_api.settings import AppSettings
 from gui_detector_api.utils.images import LoadedImage, load_image_from_upload
 
 
 @dataclass(slots=True)
-class ClassExemplar:
+class ImageExemplar:
     class_id: str
     class_name: str
     embedding: list[float]
@@ -38,7 +38,7 @@ class StoredClassRegistry(BaseModel):
 
 
 class ClassRegistryService:
-    def __init__(self, settings, embedding_service: CLIPEmbeddingService) -> None:
+    def __init__(self, settings: AppSettings, embedding_service: EmbeddingService) -> None:
         self.settings = settings
         self.embedding_service = embedding_service
         self.registry_dir = settings.class_registry_dir
@@ -64,19 +64,37 @@ class ClassRegistryService:
         with self._lock:
             return len(self._classes)
 
-    def get_exemplar_index(self) -> list[ClassExemplar]:
+    def get_text_exemplars(self) -> list[tuple[str, str, str]]:
+        """Returns (class_id, class_name, text) tuples for fuzzy OCR matching."""
         with self._lock:
-            exemplars: list[ClassExemplar] = []
+            result: list[tuple[str, str, str]] = []
             for record in self._classes.values():
-                exemplars.extend(
-                    ClassExemplar(class_id=record.class_id, class_name=record.name, embedding=embedding)
-                    for embedding in record.text_embeddings
-                )
-                exemplars.extend(
-                    ClassExemplar(class_id=record.class_id, class_name=record.name, embedding=embedding)
-                    for embedding in record.image_embeddings
-                )
-            return exemplars
+                for text in record.texts:
+                    result.append((record.class_id, record.name, text))
+            return result
+
+    def get_all_exemplars(self) -> list[ImageExemplar]:
+        """Returns ALL exemplars with embeddings (text + image) for embedding-based matching."""
+        with self._lock:
+            result: list[ImageExemplar] = []
+            for record in self._classes.values():
+                for embedding in record.text_embeddings:
+                    result.append(
+                        ImageExemplar(
+                            class_id=record.class_id,
+                            class_name=record.name,
+                            embedding=embedding,
+                        )
+                    )
+                for embedding in record.image_embeddings:
+                    result.append(
+                        ImageExemplar(
+                            class_id=record.class_id,
+                            class_name=record.name,
+                            embedding=embedding,
+                        )
+                    )
+            return result
 
     async def create_class(
         self,
