@@ -14,13 +14,15 @@ from gui_detector_api.errors import (
     PredictionExecutionError,
     PredictionTimeoutError,
 )
+from gui_detector_api.services.classification import DetectionClassificationService
+from gui_detector_api.settings import AppSettings
 from gui_detector_api.utils.images import load_image_from_upload
 
 logger = logging.getLogger(__name__)
 
 
 class PredictionService:
-    def __init__(self, settings, classification_service) -> None:
+    def __init__(self, settings: AppSettings, classification_service: DetectionClassificationService) -> None:
         self.settings = settings
         self.classification_service = classification_service
 
@@ -53,7 +55,7 @@ class PredictionService:
             raise PredictionExecutionError(str(exc)) from exc
 
         try:
-            classified_detections, classification_summary = await asyncio.wait_for(
+            annotated_detections, classified_detections, classification_summary = await asyncio.wait_for(
                 asyncio.to_thread(
                     self.classification_service.classify_detections,
                     loaded.image,
@@ -78,7 +80,7 @@ class PredictionService:
                 height=loaded.image.height,
                 size_bytes=loaded.size_bytes,
             ),
-            detections=prediction.detections,
+            detections=annotated_detections,
             classified_detections=classified_detections,
             classification=classification_summary,
         )
