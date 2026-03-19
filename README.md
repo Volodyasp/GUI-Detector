@@ -19,9 +19,9 @@ FastAPI service for GUI element detection with pluggable detector backends and O
 
 ```
 ┌─────────────────────┐     ┌──────────────────────┐
-│  Web UI (nginx)     │     │  FastAPI Backend      │
-│  localhost:3001     │────▶│  localhost:8000       │
-│  web/index.html     │     │  gui_detector_api/    │
+│  Web UI (nginx)     │     │  FastAPI Backend     │
+│  localhost:3001     │────▶│  localhost:8000      │
+│  web/index.html     │     │  gui_detector_api/   │
 └─────────────────────┘     └──────────────────────┘
                                      │
                     ┌────────────────┼────────────────┐
