@@ -14,8 +14,13 @@ def test_root_ui_returns_html_shell(ready_app):
     assert 'id="detect-button"' in response.text
     assert 'id="download-button"' in response.text
     assert 'id="preview-canvas"' in response.text
+    assert 'id="class-name-input"' in response.text
+    assert 'id="class-texts-input"' in response.text
+    assert 'id="class-images-input"' in response.text
+    assert 'id="add-class-button"' in response.text
     assert 'fetch("/v1/readiness")' in response.text
     assert 'fetch("/v1/predictions"' in response.text
+    assert 'fetch("/v1/classes")' in response.text
     assert 'query-texts' not in response.text
     assert 'query-image-input' not in response.text
 

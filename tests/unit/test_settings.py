@@ -11,7 +11,10 @@ def test_settings_use_defaults():
     assert "ui_detr_1" in settings.models
     assert "gpa_gui_detector" in settings.models
     assert settings.models["gpa_gui_detector"].device == "auto"
-    assert settings.embedding_model.hf_repo_id == "openai/clip-vit-large-patch14"
+    assert settings.embedding_model.hf_repo_id == "openai/clip-vit-base-patch32"
+    assert settings.ocr.backend == "easyocr"
+    assert settings.ocr_confidence_threshold == 0.3
+    assert settings.text_match_threshold == 0.65
     assert settings.classification_knn_k == 3
 
 

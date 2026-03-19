@@ -9,15 +9,15 @@ class StubClassificationService:
     def classify_detections(self, image, detections):
         del image
         if not detections:
-            return [], ClassificationSummary(applied=True, class_count=1, knn_k=3, similarity_threshold=0.3)
+            return detections, [], ClassificationSummary(applied=True, class_count=1, similarity_threshold=0.3)
         selected = detections[0]
-        return [
+        return detections, [
             ClassifiedDetection(
                 **selected.model_dump(),
                 predicted_class="primary_button",
                 similarity_score=0.88,
             )
-        ], ClassificationSummary(applied=True, class_count=2, knn_k=3, similarity_threshold=0.3)
+        ], ClassificationSummary(applied=True, class_count=2, similarity_threshold=0.3)
 
 
 class FakeEmbeddingService:

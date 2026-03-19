@@ -40,7 +40,7 @@ def test_prediction_response_serializes_to_expected_shape():
                 similarity_score=0.83,
             )
         ],
-        classification=ClassificationSummary(applied=True, class_count=2, knn_k=3, similarity_threshold=0.3),
+        classification=ClassificationSummary(applied=True, class_count=2, similarity_threshold=0.3),
     )
     payload = response.model_dump(mode="json")
     assert payload["model"]["backend"] == "ultralytics"

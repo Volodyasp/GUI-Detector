@@ -24,11 +24,13 @@ class Detection(BaseModel):
     class_id: int | None = None
     confidence: float = Field(ge=0.0, le=1.0)
     bbox: BoundingBox
+    ocr_text: str | None = None
 
 
 class ClassifiedDetection(Detection):
     predicted_class: str
     similarity_score: float = Field(ge=-1.0, le=1.0)
+    match_method: str | None = None
 
 
 class PredictionResult(BaseModel):
@@ -52,7 +54,6 @@ class ImageMetadata(BaseModel):
 class ClassificationSummary(BaseModel):
     applied: bool = False
     class_count: int = 0
-    knn_k: int | None = None
     similarity_threshold: float | None = None
 
 
