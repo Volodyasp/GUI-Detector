@@ -24,7 +24,7 @@ WORKDIR /app
 COPY poetry.lock pyproject.toml README.md ./
 COPY gui_detector_api ./gui_detector_api
 
-RUN poetry install --without dev --with models --no-interaction --no-ansi
+RUN poetry install --without dev --with models,ocr --no-interaction --no-ansi
 
 RUN useradd --create-home --shell /bin/bash appuser
 RUN mkdir -p /app/model-cache && chown -R appuser:appuser /app

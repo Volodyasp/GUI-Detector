@@ -47,6 +47,10 @@ def test_class_registry_persists_and_cleans_assets(tmp_path, png_bytes):
     listed = reloaded.list_classes()
     assert listed.classes[0].class_id == created.class_id
 
+    text_exemplars = reloaded.get_text_exemplars()
+    assert len(text_exemplars) == 2
+    assert text_exemplars[0][2] in ("button", "cta")
+
     replaced = asyncio.run(
         reloaded.replace_class(
             class_id=created.class_id,

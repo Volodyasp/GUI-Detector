@@ -19,7 +19,7 @@ def normalize_vector(values: list[float]) -> list[float]:
     return [value / norm for value in values]
 
 
-class CLIPEmbeddingService:
+class EmbeddingService:
     def __init__(self, settings: AppSettings) -> None:
         self.settings = settings
         self._lock = RLock()
@@ -57,10 +57,10 @@ class CLIPEmbeddingService:
                 return
 
             try:
-                CLIPModel, CLIPProcessor, torch = self._import_runtime()
+                ModelClass, ProcessorClass, torch = self._import_runtime()
             except ImportError as exc:
                 raise EmbeddingUnavailableError(
-                    "CLIP embedding dependencies are not installed. Run `poetry install --with models` to enable them."
+                    "Embedding model dependencies are not installed. Run `poetry install --with models` to enable them."
                 ) from exc
 
             try:
@@ -75,19 +75,19 @@ class CLIPEmbeddingService:
             cache_dir.mkdir(parents=True, exist_ok=True)
 
             try:
-                self._processor = CLIPProcessor.from_pretrained(
+                self._processor = ProcessorClass.from_pretrained(
                     self.settings.embedding_model.hf_repo_id,
                     cache_dir=str(cache_dir),
                     local_files_only=self.settings.embedding_model.local_files_only,
                 )
-                self._model = CLIPModel.from_pretrained(
+                self._model = ModelClass.from_pretrained(
                     self.settings.embedding_model.hf_repo_id,
                     cache_dir=str(cache_dir),
                     local_files_only=self.settings.embedding_model.local_files_only,
                 )
             except Exception as exc:
                 raise EmbeddingUnavailableError(
-                    f"Failed to load CLIP embedding model '{self.settings.embedding_model.hf_repo_id}': {exc}"
+                    f"Failed to load embedding model '{self.settings.embedding_model.hf_repo_id}': {exc}"
                 ) from exc
 
             self._torch = torch
@@ -108,7 +108,7 @@ class CLIPEmbeddingService:
         return [normalize_vector([float(item) for item in row]) for row in rows]
 
     def _import_runtime(self):
-        from transformers import CLIPModel, CLIPProcessor
+        from transformers import AutoModel, AutoProcessor
         import torch
 
-        return CLIPModel, CLIPProcessor, torch
+        return AutoModel, AutoProcessor, torch

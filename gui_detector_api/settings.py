@@ -22,9 +22,15 @@ class ModelSettings(BaseModel):
 
 
 class EmbeddingModelSettings(BaseModel):
-    hf_repo_id: str = "openai/clip-vit-large-patch14"
+    hf_repo_id: str = "openai/clip-vit-base-patch32"
     device: DeviceName = "auto"
     local_files_only: bool = False
+
+
+class OcrSettings(BaseModel):
+    backend: str = "easyocr"
+    languages: list[str] = Field(default_factory=lambda: ["en"])
+    min_crop_height_for_upscale: int = 64
 
 
 def default_models() -> dict[str, ModelSettings]:
@@ -58,12 +64,16 @@ class AppSettings(BaseSettings):
     active_model: str = "ui_detr_1"
     models: dict[str, ModelSettings] = Field(default_factory=default_models)
     embedding_model: EmbeddingModelSettings = Field(default_factory=EmbeddingModelSettings)
+    ocr: OcrSettings = Field(default_factory=OcrSettings)
     model_cache_dir: Path = Path("model-cache")
     class_registry_dir: Path = Path("class-registry")
-    max_upload_size_bytes: int = 10 * 1024 * 1024
-    prediction_timeout_seconds: float = 60.0
+    max_upload_size_bytes: int = Field(default=10 * 1024 * 1024, gt=0)
+    prediction_timeout_seconds: float = Field(default=60.0, gt=0.0)
+    ocr_confidence_threshold: float = Field(default=0.3, ge=0.0, le=1.0)
+    text_match_threshold: float = Field(default=0.65, ge=0.0, le=1.0)
     classification_knn_k: int = 3
-    classification_similarity_threshold: float = 0.3
+    classification_similarity_threshold: float = Field(default=0.35, ge=0.0, le=1.0)
+    classification_similarity_margin: float = Field(default=0.02, ge=0.0, le=1.0)
     log_level: str = "INFO"
 
 

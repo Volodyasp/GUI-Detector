@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from gui_detector_api.services.embeddings import CLIPEmbeddingService
+from gui_detector_api.services.embeddings import EmbeddingService
 from gui_detector_api.settings import AppSettings, default_models
 
 
@@ -85,33 +85,33 @@ class FakeTorch:
         return FakeNoGrad()
 
 
-def test_clip_embedding_service_loads_runtime_and_normalizes_text_embeddings(monkeypatch, tmp_path):
+def test_embedding_service_loads_runtime_and_normalizes_text_embeddings(monkeypatch, tmp_path):
     settings = AppSettings(
         models=default_models(),
         model_cache_dir=tmp_path / "model-cache",
         class_registry_dir=tmp_path / "class-registry",
     )
     settings.embedding_model.device = "cpu"
-    service = CLIPEmbeddingService(settings=settings)
+    service = EmbeddingService(settings=settings)
     monkeypatch.setattr(service, "_import_runtime", lambda: (FakeModel, FakeProcessor, FakeTorch))
 
     embeddings = service.embed_texts(["primary button"])
 
-    assert FakeProcessor.load_kwargs["repo_id"] == "openai/clip-vit-large-patch14"
-    assert FakeModel.load_kwargs["repo_id"] == "openai/clip-vit-large-patch14"
+    assert FakeProcessor.load_kwargs["repo_id"] == settings.embedding_model.hf_repo_id
+    assert FakeModel.load_kwargs["repo_id"] == settings.embedding_model.hf_repo_id
     assert embeddings == [[0.6, 0.8]]
     assert service._model.moved_to == "cpu"
     assert service._model.eval_called is True
 
 
-def test_clip_embedding_service_normalizes_image_embeddings(monkeypatch, tmp_path):
+def test_embedding_service_normalizes_image_embeddings(monkeypatch, tmp_path):
     settings = AppSettings(
         models=default_models(),
         model_cache_dir=tmp_path / "model-cache",
         class_registry_dir=tmp_path / "class-registry",
     )
     settings.embedding_model.device = "cpu"
-    service = CLIPEmbeddingService(settings=settings)
+    service = EmbeddingService(settings=settings)
     monkeypatch.setattr(service, "_import_runtime", lambda: (FakeModel, FakeProcessor, FakeTorch))
     sentinel = object()
 

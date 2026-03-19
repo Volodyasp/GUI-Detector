@@ -3,9 +3,11 @@ from __future__ import annotations
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, FastAPI, File, Form, Request, Response, UploadFile
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import JSONResponse
 
 from gui_detector_api.domain.schemas import (
+    BatchClassesRequest,
+    BatchClassesResponse,
     HealthResponse,
     PredictionResponse,
     ReadyResponse,
@@ -13,10 +15,8 @@ from gui_detector_api.domain.schemas import (
     UserClassesResponse,
 )
 from gui_detector_api.errors import APIError
-from gui_detector_api.rendering.app_page import render_app_page
 from gui_detector_api.runtime import RuntimeState
 
-page_router = APIRouter()
 api_router = APIRouter(prefix="/v1")
 
 
@@ -49,7 +49,7 @@ async def _reject_legacy_prediction_form_fields(request: Request) -> None:
         error="unsupported_parameter",
         detail=(
             "Fields 'query_texts' and 'query_image' are no longer supported on /v1/predictions. "
-            "Create server-side classes via /v1/classes and use CLIP post-classification instead."
+            "Create server-side classes via /v1/classes and use OCR post-classification instead."
         ),
     )
 
@@ -73,11 +73,6 @@ def _build_not_ready_response(runtime: RuntimeState) -> JSONResponse:
         detail=runtime.load_error or "Active detector has not been loaded.",
     )
     return JSONResponse(status_code=503, content=payload.model_dump(mode="json"))
-
-
-@page_router.get("/", response_class=HTMLResponse, include_in_schema=False)
-async def app_shell() -> HTMLResponse:
-    return HTMLResponse(render_app_page())
 
 
 @api_router.get("/healthcheck", response_model=HealthResponse, tags=["health"])
@@ -109,6 +104,22 @@ async def create_class(
         texts=texts,
         images=images,
     )
+
+
+@api_router.post("/classes/batch", response_model=BatchClassesResponse, tags=["classes"])
+async def batch_create_classes(
+    payload: BatchClassesRequest,
+    runtime: RuntimeState = Depends(get_runtime),
+) -> BatchClassesResponse:
+    created = []
+    for entry in payload.classes:
+        result = await runtime.class_registry.create_class(
+            name=entry.name,
+            texts=entry.texts or None,
+            images=None,
+        )
+        created.append(result)
+    return BatchClassesResponse(created=created)
 
 
 @api_router.put("/classes/{class_id}", response_model=UserClassResponse, tags=["classes"])
@@ -150,5 +161,4 @@ async def predict(
 
 
 def register_endpoints(app: FastAPI) -> None:
-    app.include_router(page_router)
     app.include_router(api_router)

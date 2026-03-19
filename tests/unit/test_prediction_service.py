@@ -40,7 +40,7 @@ class StubDetector(Detector):
 class StubClassificationService:
     def classify_detections(self, image, detections):
         del image
-        return [], ClassificationSummary(applied=False, class_count=0, knn_k=3, similarity_threshold=0.3)
+        return detections, [], ClassificationSummary(applied=False, class_count=0, similarity_threshold=0.3)
 
 
 def test_prediction_service_preserves_adapter_output_order_and_ids(png_bytes, tmp_path):

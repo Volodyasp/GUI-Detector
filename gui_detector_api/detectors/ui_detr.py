@@ -12,10 +12,11 @@ from gui_detector_api.detectors.base import (
     to_list,
 )
 from gui_detector_api.domain.schemas import PredictionResult
+from gui_detector_api.settings import AppSettings, ModelSettings
 
 
 class UIDetrDetector(Detector):
-    def __init__(self, model_key, model_settings, app_settings) -> None:
+    def __init__(self, model_key: str, model_settings: ModelSettings, app_settings: AppSettings) -> None:
         super().__init__(model_key, model_settings, app_settings)
         self._model = None
 
