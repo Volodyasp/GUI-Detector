@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 
 from gui_detector_api.detectors.model_registry import ModelRegistry
 from gui_detector_api.endpoints import register_endpoints
@@ -27,6 +28,12 @@ def create_app(
             model_registry=resolved_registry,
             load_detector_on_startup=load_detector_on_startup,
         ),
+    )
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
     app.add_exception_handler(RequestValidationError, validation_error_handler)
     app.add_exception_handler(APIError, api_error_handler)

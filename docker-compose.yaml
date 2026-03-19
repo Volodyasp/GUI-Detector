@@ -6,10 +6,22 @@ services:
     image: gui-detector-api:latest
     container_name: gui-detector-api
     init: true
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     volumes:
       - model-cache:/app/model-cache
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: gui-detector-frontend:latest
+    container_name: gui-detector-frontend
+    ports:
+      - "8000:80"
+    depends_on:
+      - api
     restart: unless-stopped
 
 volumes:

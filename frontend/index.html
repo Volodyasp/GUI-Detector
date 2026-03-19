@@ -1,8 +1,4 @@
-from __future__ import annotations
-
-
-def render_app_page() -> str:
-    return """<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -358,7 +354,7 @@ def render_app_page() -> str:
       }
 
       .empty-inner::before {
-        content: "\\1F5BC";
+        content: "\1F5BC";
         display: block;
         font-size: 2.4rem;
         margin-bottom: 12px;
@@ -537,7 +533,7 @@ def render_app_page() -> str:
       }
 
       .class-empty::before {
-        content: "\\2B50";
+        content: "\2B50";
         display: block;
         font-size: 1.8rem;
         margin-bottom: 8px;
@@ -895,9 +891,9 @@ def render_app_page() -> str:
         detectionsBody.innerHTML = rows
           .map(function (detection, idx) {
             var classified = classifiedById[detection.id];
-            var ocrText = detection.ocr_text ? escapeHtml(detection.ocr_text) : "\\u2014";
-            var predictedClass = classified ? escapeHtml(classified.predicted_class) : "\\u2014";
-            var matchMethod = classified ? matchBadge(classified.match_method) : "\\u2014";
+            var ocrText = detection.ocr_text ? escapeHtml(detection.ocr_text) : "\u2014";
+            var predictedClass = classified ? escapeHtml(classified.predicted_class) : "\u2014";
+            var matchMethod = classified ? matchBadge(classified.match_method) : "\u2014";
             return '<tr class="row-animated" style="animation-delay:' + (idx * 30) + 'ms">' +
               "<td>" + escapeHtml(detection.label) + "</td>" +
               "<td>" + Number(detection.confidence).toFixed(3) + "</td>" +
@@ -1010,7 +1006,7 @@ def render_app_page() -> str:
           }
           var payload = await response.json();
           metaModel.textContent = payload.active_model;
-          metaBackend.textContent = payload.backend || "\\u2014";
+          metaBackend.textContent = payload.backend || "\u2014";
         } catch (error) {
           setStatus(statusMessage, error.message || "Could not load readiness information.", "warn");
         }
@@ -1026,7 +1022,7 @@ def render_app_page() -> str:
 
       function parseTextExemplars() {
         return classTextsInput.value
-          .split("\\n")
+          .split("\n")
           .map(function (value) { return value.trim(); })
           .filter(Boolean);
       }
@@ -1262,7 +1258,7 @@ def render_app_page() -> str:
           return;
         }
         var link = document.createElement("a");
-        var stem = selectedFile.name.replace(/\\.[^.]+$/, "") || "annotated";
+        var stem = selectedFile.name.replace(/\.[^.]+$/, "") || "annotated";
         link.href = canvas.toDataURL("image/png");
         link.download = stem + "-annotated.png";
         link.click();
@@ -1274,4 +1270,3 @@ def render_app_page() -> str:
     </script>
   </body>
 </html>
-"""

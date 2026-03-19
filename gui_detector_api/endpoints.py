@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, FastAPI, File, Form, Request, Response, UploadFile
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import JSONResponse
 
 from gui_detector_api.domain.schemas import (
     HealthResponse,
@@ -13,10 +13,8 @@ from gui_detector_api.domain.schemas import (
     UserClassesResponse,
 )
 from gui_detector_api.errors import APIError
-from gui_detector_api.rendering.app_page import render_app_page
 from gui_detector_api.runtime import RuntimeState
 
-page_router = APIRouter()
 api_router = APIRouter(prefix="/v1")
 
 
@@ -73,11 +71,6 @@ def _build_not_ready_response(runtime: RuntimeState) -> JSONResponse:
         detail=runtime.load_error or "Active detector has not been loaded.",
     )
     return JSONResponse(status_code=503, content=payload.model_dump(mode="json"))
-
-
-@page_router.get("/", response_class=HTMLResponse, include_in_schema=False)
-async def app_shell() -> HTMLResponse:
-    return HTMLResponse(render_app_page())
 
 
 @api_router.get("/healthcheck", response_model=HealthResponse, tags=["health"])
@@ -150,5 +143,4 @@ async def predict(
 
 
 def register_endpoints(app: FastAPI) -> None:
-    app.include_router(page_router)
     app.include_router(api_router)
