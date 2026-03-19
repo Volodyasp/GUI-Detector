@@ -723,8 +723,10 @@
               </div>
               <div class="button-row">
                 <button id="add-class-button" class="primary-button" type="button">Add Class</button>
+                <button id="import-json-button" class="ghost-button" type="button">Import JSON</button>
                 <button id="reset-class-form-button" class="secondary-button" type="button">Clear Form</button>
                 <button id="refresh-classes-button" class="ghost-button" type="button">Refresh Classes</button>
+                <input id="import-json-input" type="file" accept="application/json,.json" hidden />
               </div>
               <div id="class-status-message" class="status" aria-live="polite">
                 Create classes here, then run detection again to apply filtering.
@@ -803,6 +805,8 @@
       var classImagesInput = document.getElementById("class-images-input");
       var classImagesNote = document.getElementById("class-images-note");
       var addClassButton = document.getElementById("add-class-button");
+      var importJsonButton = document.getElementById("import-json-button");
+      var importJsonInput = document.getElementById("import-json-input");
       var resetClassFormButton = document.getElementById("reset-class-form-button");
       var refreshClassesButton = document.getElementById("refresh-classes-button");
       var classStatusMessage = document.getElementById("class-status-message");
@@ -1172,6 +1176,36 @@
         }
       }
 
+      /* ---- API: Import JSON ---- */
+      async function importClassesFromJson() {
+        var file = importJsonInput.files && importJsonInput.files[0];
+        importJsonInput.value = "";
+        if (!file) return;
+
+        setStatus(classStatusMessage, "Importing classes from JSON...");
+        try {
+          var text = await file.text();
+          var data = JSON.parse(text);
+          var classes = data.classes || data;
+          if (!Array.isArray(classes)) {
+            throw new Error("JSON must be {\"classes\": [...]} or an array of class objects.");
+          }
+          var response = await fetch("/v1/classes/batch", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ classes: classes }),
+          });
+          var payload = await response.json();
+          if (!response.ok) {
+            throw new Error(payload.detail || "Batch import failed.");
+          }
+          var count = (payload.created || []).length;
+          await loadClasses(count + " class" + (count === 1 ? "" : "es") + " imported from JSON.");
+        } catch (error) {
+          setStatus(classStatusMessage, error.message || "JSON import failed.", "error");
+        }
+      }
+
       /* ---- API: Detection ---- */
       async function runDetection() {
         if (!selectedFile) {
@@ -1247,6 +1281,8 @@
       classImagesInput.addEventListener("change", updateSelectedImageNote);
       detectButton.addEventListener("click", runDetection);
       addClassButton.addEventListener("click", createClass);
+      importJsonButton.addEventListener("click", function () { importJsonInput.click(); });
+      importJsonInput.addEventListener("change", importClassesFromJson);
       refreshClassesButton.addEventListener("click", function () { loadClasses("Class list refreshed."); });
       resetClassFormButton.addEventListener("click", function () {
         resetClassForm();
